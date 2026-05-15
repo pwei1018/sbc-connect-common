@@ -153,6 +153,9 @@ def setup_pg8000_close_event_listener(engine):
     Args:
         engine: The SQLAlchemy engine object
     """
+    if getattr(engine, "driver", None) != "pg8000":
+        return
+
     import logging
 
     try:

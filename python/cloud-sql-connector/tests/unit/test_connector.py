@@ -217,9 +217,22 @@ class TestSetupPg8000CloseEventListener:
     """Test the setup_pg8000_close_event_listener function."""
 
     @patch("cloud_sql_connector.connector.event")
+    def test_setup_pg8000_close_event_listener_non_pg8000(self, mock_event):
+        """Test setting up the event listener skips when driver is not pg8000."""
+        mock_engine = Mock()
+        mock_engine.driver = "psycopg2"
+
+        # Call function
+        setup_pg8000_close_event_listener(mock_engine)
+
+        # Verify event listener is NOT set up
+        mock_event.listens_for.assert_not_called()
+
+    @patch("cloud_sql_connector.connector.event")
     def test_setup_pg8000_close_event_listener(self, mock_event):
         """Test setting up the pg8000 close event listener."""
         mock_engine = Mock()
+        mock_engine.driver = "pg8000"
 
         # Call function
         setup_pg8000_close_event_listener(mock_engine)
@@ -231,6 +244,7 @@ class TestSetupPg8000CloseEventListener:
     def test_event_listener_callback_normal_close(self, mock_event):
         """Test the event listener callback function with normal close."""
         mock_engine = Mock()
+        mock_engine.driver = "pg8000"
 
         # Capture the callback function
         callback_function = None
@@ -266,6 +280,7 @@ class TestSetupPg8000CloseEventListener:
     def test_event_listener_callback_interface_error(self, mock_event):
         """Test the event listener callback function suppressing InterfaceError."""
         mock_engine = Mock()
+        mock_engine.driver = "pg8000"
 
         # Capture the callback function
         callback_function = None
@@ -284,7 +299,10 @@ class TestSetupPg8000CloseEventListener:
         setup_pg8000_close_event_listener(mock_engine)
 
         # Mock the dbapi_conn and its close method to raise InterfaceError
-        from pg8000.exceptions import InterfaceError
+        try:
+            from pg8000.exceptions import InterfaceError
+        except ImportError:
+            InterfaceError = Exception
 
         mock_dbapi_conn = Mock()
         original_close = Mock(side_effect=InterfaceError("Test InterfaceError"))
@@ -305,8 +323,7 @@ class TestSetupPg8000CloseEventListener:
     def test_event_listener_callback_other_error(self, mock_event):
         """Test the event listener callback function re-raises other errors."""
         mock_engine = Mock()
-
-        # Capture the callback function
+        mock_engine.driver = "pg8000"  # Capture the callback function
         callback_function = None
 
         def capture_callback(engine, event_name):
