@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cloud-sql-connector"
-version = "0.2.2"
+version = "0.2.3"
 description = "Cloud SQL connection utilities for database connectivity with authentication and schema management"
 authors = ["Andriy Bolyachevets <andriy.Bolyachevets@gov.bc.ca>"]
 readme = "README.md"

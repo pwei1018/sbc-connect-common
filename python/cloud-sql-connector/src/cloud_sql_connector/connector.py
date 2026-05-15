@@ -23,6 +23,7 @@ from sqlalchemy import event
 _connector = None
 _lock = threading.Lock()
 
+
 @dataclass
 class DBConfig:
     """Database configuration settings."""
@@ -69,17 +70,17 @@ class DBConfig:
 
 def _get_connector() -> Connector:
     """Get the singleton connector instance with lazy initialization.
-    
+
     Returns:
         Connector: The singleton connector instance
     """
     global _connector
-    
+
     if _connector is None:
         with _lock:
             if _connector is None:
                 _connector = Connector(refresh_strategy="lazy")
-    
+
     return _connector
 
 
@@ -144,3 +145,34 @@ def setup_search_path_event_listener(engine, schema):
         cursor = dbapi_connection.cursor()
         cursor.execute(f"SET search_path TO {schema},public")
         cursor.close()
+
+
+def setup_pg8000_close_event_listener(engine):
+    """Set up an event listener to wrap dbapi connection close() to suppress pg8000 errors during Cloud Run scale-down.
+
+    Args:
+        engine: The SQLAlchemy engine object
+    """
+    import logging
+
+    try:
+        from pg8000.exceptions import InterfaceError
+    except ImportError:
+        InterfaceError = None
+
+    @event.listens_for(engine, "connect")
+    def on_connect(dbapi_conn, _connection_record):
+        original_close = dbapi_conn.close
+
+        def safe_close():
+            try:
+                original_close()
+            except Exception as e:
+                if InterfaceError and isinstance(e, InterfaceError):
+                    logging.getLogger(__name__).debug(
+                        "Suppressed pg8000 InterfaceError on connection close during teardown."
+                    )
+                else:
+                    raise
+
+        dbapi_conn.close = safe_close
