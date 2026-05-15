@@ -18,9 +18,13 @@ from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 
-from cloud_sql_connector.connector import (DBConfig, close_connector, getconn,
-                                           setup_pg8000_close_event_listener,
-                                           setup_search_path_event_listener)
+from cloud_sql_connector.connector import (
+    DBConfig,
+    close_connector,
+    getconn,
+    setup_pg8000_close_event_listener,
+    setup_search_path_event_listener,
+)
 
 
 class TestDBConfig:
@@ -53,6 +57,7 @@ class TestDBConfig:
         )
 
         assert config.schema == ""
+
 
 class TestGetconn:
     """Test the getconn function."""
@@ -280,7 +285,7 @@ class TestSetupPg8000CloseEventListener:
 
         # Mock the dbapi_conn and its close method to raise InterfaceError
         from pg8000.exceptions import InterfaceError
-        
+
         mock_dbapi_conn = Mock()
         original_close = Mock(side_effect=InterfaceError("Test InterfaceError"))
         mock_dbapi_conn.close = original_close
